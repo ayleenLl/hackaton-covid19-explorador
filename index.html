@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador COVID-19 | Hackatón JS Avanzado</title>
+
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+
+        <script>
+
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+            extend: {
+            colors: {
+            ink: {
+            50:  '#f1f5f6',
+            100: '#dbe5e7',
+            400: '#5b7a82',
+            700: '#1e3338',
+            800: '#16262a',
+            900: '#0d1a1d',
+            950: '#070f11',
+        },
+            alert: {
+            400: '#f5a623',
+            500: '#e6921a',
+        },
+            signal: {
+            400: '#5fd0c7',
+            500: '#3bb3a9',
+        }
+        },
+            fontFamily: {
+            display: ['"Space Grotesk"', 'sans-serif'],
+            body: ['"Inter"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+        }
+        }
+        }
+        }
+        </script>
+
+
+        <link rel="stylesheet" href="style.css">
+        </head>
+
+        <body class="bg-ink-50 dark:bg-ink-950 text-ink-900 dark:text-ink-50 font-body min-h-screen">
+
+
+        <header class="sticky top-0 z-50 border-b border-ink-100 dark:border-ink-800 bg-ink-50/90 dark:bg-ink-950/90 backdrop-blur-md">
+            <div class="max-w-6xl mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
+                <div>
+                    <p class="font-mono text-[11px] tracking-widest text-signal-500 uppercase">disease.sh · datos en vivo</p>
+                    <h1 class="font-display font-700 text-xl md:text-2xl tracking-tight">Explorador COVID-19</h1>
+                </div>
+
+
+                <nav aria-label="Secciones del sitio" class="hidden lg:flex items-center gap-5 text-sm text-ink-400">
+                    <a href="#stats-heading" class="hover:text-signal-500 transition-colors">Panorama</a>
+                    <a href="#compare-heading" class="hover:text-signal-500 transition-colors">Comparador</a>
+                    <a href="#charts-heading" class="hover:text-signal-500 transition-colors">Gráficos</a>
+                    <a href="#gallery-heading" class="hover:text-signal-500 transition-colors">Galería</a>
+                </nav>
+
+                <div class="flex items-center gap-3">
+                    <!-- Indicador de última actualización  -->
+                    <span id="last-updated" class="hidden sm:block font-mono text-xs text-ink-400">
+          Actualizando…
+        </span>
+
+                    <!-- BOTÓN DE TEMA -->
+                    <button id="theme-toggle"
+                            class="w-10 h-10 rounded-full border border-ink-100 dark:border-ink-800 flex items-center justify-center
+                 hover:bg-ink-100 dark:hover:bg-ink-800 transition-colors"
+                            aria-label="Cambiar tema claro/oscuro">
+                        <span id="theme-icon">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+
+        <!-- MAIN: todo el contenido funcional vive aquí -->
+
+        <main class="max-w-6xl mx-auto px-5 md:px-8">
+
+            <section class="py-10 md:py-16">
+                <p class="font-mono text-xs text-alert-500 uppercase tracking-widest mb-3">Hackatón JS Avanzado · Nivel Oro</p>
+                <h2 class="font-display font-700 text-3xl md:text-5xl leading-tight max-w-3xl">
+                    El mundo en números:<br class="hidden md:block"> seguimiento global del COVID-19
+                </h2>
+                <p class="mt-4 text-ink-400 max-w-xl">
+                    Datos extraídos en tiempo real desde la API pública <strong class="text-signal-500">disease.sh</strong>,
+                    que agrega información oficial de Worldometers.
+                </p>
+            </section>
+
+            <!-- ---------- LOADING STATE GLOBAL ---------- -->
+
+            <div id="loading-state" class="flex flex-col items-center justify-center py-24 gap-4">
+                <div class="w-12 h-12 rounded-full border-4 border-ink-100 dark:border-ink-800 border-t-signal-500 animate-spin-slow"></div>
+                <p class="font-mono text-sm text-ink-400">Conectando con disease.sh…</p>
+            </div>
+
+            <!-- ---------- ERROR STATE GLOBAL ---------- -->
+            <div id="error-state" class="hidden flex-col items-center justify-center py-24 gap-3 text-center">
+                <span class="text-4xl">⚠️</span>
+                <p class="font-display font-600 text-lg">No pudimos conectar con la API</p>
+                <p class="text-ink-400 max-w-md text-sm">
+                    Revisa tu conexión a internet o vuelve a intentarlo en unos segundos. disease.sh puede tardar en responder.
+                </p>
+                <button id="retry-btn" class="mt-2 px-5 py-2 rounded-full bg-signal-500 text-ink-950 font-600 text-sm hover:bg-signal-400 transition-colors">
+                    Reintentar
+                </button>
+            </div>
+
+            <!-- ---------- CONTENIDO PRINCIPAL (oculto hasta que carguen los datos) ---------- -->
+            <div id="app-content" class="hidden">
+
+                <!-- SECCIÓN 1: Tarjetas de estadísticas globales  -->
+                <section aria-labelledby="stats-heading" class="pb-12">
+                    <h3 id="stats-heading" class="font-display font-700 text-xl mb-5">Panorama global</h3>
+                    <div id="global-cards" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Las 4 tarjetas (cases, deaths, recovered, active) se inyectan aquí vía JS -->
+                    </div>
+                </section>
+
+                <!-- SECCIÓN 2: Selector interactivo + comparador de países (Plata) -->
+                <section aria-labelledby="compare-heading" class="pb-12">
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-5">
+                        <div>
+                            <h3 id="compare-heading" class="font-display font-700 text-xl">Comparador de países</h3>
+                            <p class="text-sm text-ink-400 mt-1">Elige un país para ver su detalle y compararlo contra el resto.</p>
+                        </div>
+
+                        <!-- INPUT DE BÚSQUEDA: requisito Plata (componente interactivo) -->
+                        <div class="flex gap-2">
+                            <input id="country-search" type="text" placeholder="Buscar país (ej: chile)"
+                                   class="px-4 py-2 rounded-full border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900
+                     text-sm focus:outline-none focus:ring-2 focus:ring-signal-500 w-48">
+                                <!-- SELECT: segundo componente interactivo pedido en Plata -->
+                                <select id="country-select"
+                                        class="px-4 py-2 rounded-full border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900
+                     text-sm focus:outline-none focus:ring-2 focus:ring-signal-500">
+                                    <option value="">— Selecciona —</option>
+                                </select>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de detalle del país seleccionado -->
+
+                    <article id="country-detail" class="hidden mb-6 p-5 rounded-2xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900"></article>
+
+                    <!-- Tabla/ranking de top países con barras de progreso (Bronce/Plata) -->
+                    <div class="overflow-x-auto thin-scroll rounded-2xl border border-ink-100 dark:border-ink-800">
+                        <table class="w-full text-sm">
+                            <thead class="bg-ink-100 dark:bg-ink-800 text-left">
+                            <tr>
+                                <th class="px-4 py-3 font-display font-600">País</th>
+                                <th class="px-4 py-3 font-display font-600">Casos totales</th>
+                                <th class="px-4 py-3 font-display font-600 hidden md:table-cell">Proporción vs. el líder</th>
+                            </tr>
+                            </thead>
+                            <tbody id="ranking-body" class="divide-y divide-ink-100 dark:divide-ink-800">
+                            <!-- Filas inyectadas por JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- SECCIÓN 3: Gráficos con Chart.js -->
+                <section aria-labelledby="charts-heading" class="pb-12 grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 id="charts-heading" class="font-display font-700 text-xl mb-5">Distribución por continente</h3>
+                        <div class="p-5 rounded-2xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 h-80">
+                            <canvas id="continent-chart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-700 text-xl mb-5">Top 8 países por casos</h3>
+                        <div class="p-5 rounded-2xl border border-ink-100 dark:border-ink-800 bg-white dark:bg-ink-900 h-80">
+                            <canvas id="top-countries-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SECCIÓN 4: Galería con scroll reveal  -->
+                <section aria-labelledby="gallery-heading" class="pb-16">
+                    <h3 id="gallery-heading" class="font-display font-700 text-xl mb-5">La pandemia en imágenes</h3>
+                    <div id="gallery" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Imágenes inyectadas por JS, cada una con clase "reveal" para animar al hacer scroll -->
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+
+        <footer class="border-t border-ink-100 dark:border-ink-800 py-8 mt-8">
+            <div class="max-w-6xl mx-auto px-5 md:px-8 flex flex-col md:flex-row justify-between gap-2 text-sm text-ink-400">
+                <p>Fuente de datos: <a href="https://disease.sh" target="_blank" class="underline hover:text-signal-500">disease.sh</a> / Worldometers</p>
+                <p>Proyecto Hackatón COVID-19 —  Rodrigo Valencia - Ayleen Llantén </p>
+            </div>
+        </footer>
+
+        <!--
+          NUESTRO JAVASCRIPT: toda la lógica de la app (clases, fetch, eventos)
+          vive en app.js. Lo cargamos al final del body con "defer" para que
+          el HTML ya esté completamente parseado antes de que el script
+          intente manipular elementos del DOM.
+        -->
+        <script src="app.js" defer></script>
+        </body>
+    </html>
