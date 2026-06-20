@@ -1,0 +1,41 @@
+/* ============================================================
+   STYLE.CSS — Explorador COVID-19
+   ============================================================
+   Estos son estilos personalizados que Tailwind NO cubre con sus
+   clases utilitarias normales (como bg-red-500, flex, etc).
+   Aquí van animaciones a medida y ajustes muy específicos.
+   Tailwind sigue trabajando desde el CDN en index.html; este
+   archivo solo lo complementa.
+================================================================ */
+
+
+
+/* Transición suave para el cambio de tema claro/oscuro en TODO el documento */
+html.theme-transition, html.theme-transition * {
+    transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease !important;
+}
+
+/* Animación del spinner de carga (gira infinitamente) */
+@keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.animate-spin-slow { animation: spin-slow 1.2s linear infinite; }
+
+/* Animación de aparición tipo "scroll reveal" para la galería de imágenes */
+@keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.reveal { opacity: 0; }
+.reveal.is-visible { animation: fade-up 0.7s ease forwards; }
+
+/* Barra de progreso: relleno animado de 0 al ancho final */
+.bar-fill { transition: width 1s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* Scrollbar fina y discreta para las tablas con overflow */
+/* Nota: usamos el código de color directo (#3bb3a9) en vez de la función
+   theme() de Tailwind, porque ESTE archivo es CSS plano y el navegador
+   no sabe interpretar funciones de Tailwind fuera de su propio motor. */
+.thin-scroll::-webkit-scrollbar { height: 6px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #3bb3a9; border-radius: 4px; }
